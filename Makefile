@@ -19,7 +19,7 @@
 # directory of the binary download (the directory that has bin/, lib/, include/
 # and other directories inside).
 # See the build_vs_released_binary.sh script for an example.
-LLVM_SRC_PATH := $$HOME/clang/llvm/
+LLVM_SRC_PATH := /home/yonathan/Documents/school/sem4/analysis/homeworks
 
 # LLVM_BUILD_PATH is the directory in which you built LLVM - where you ran
 # configure or cmake.
@@ -28,7 +28,7 @@ LLVM_SRC_PATH := $$HOME/clang/llvm/
 # process. It should contain the tools like opt, llc and clang. The default
 # reflects a release build with CMake and Ninja. binary build of LLVM, point it
 # to the bin/ directory.
-LLVM_BUILD_PATH := $$HOME/clang/build/
+LLVM_BUILD_PATH := /home/yonathan/Documents/school/sem4/analysis/homeworks/llvm
 LLVM_BIN_PATH 	:= $(LLVM_BUILD_PATH)/bin
 
 $(info -----------------------------------------------)
@@ -103,7 +103,7 @@ BUILDDIR := build
 .PHONY: all
 all: make_builddir \
 	emit_build_config \
-	$(BUILDDIR)/t2_cfg_if
+	$(BUILDDIR)/hw2_t1.cpp
 
 .PHONY: test
 test: emit_build_config
@@ -118,7 +118,7 @@ make_builddir:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 
 
-$(BUILDDIR)/t2_cfg_if: $(SRC_CLANG_DIR)/t2_cfg_if.cpp
+$(BUILDDIR)/hw2_t1.cpp: $(SRC_CLANG_DIR)/hw2_t1.cpp
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) $^ \
 		$(CLANG_LIBS) $(LLVM_LDFLAGS) -o $@
 
