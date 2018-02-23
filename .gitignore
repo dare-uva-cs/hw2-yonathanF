@@ -1,3 +1,6 @@
 mytag
 *.swp
+/build
+*/build
+*/build/*
 
