@@ -28,6 +28,8 @@ using namespace clang;
 using namespace clang::driver;
 using namespace clang::tooling;
 
+static llvm::cl::OptionCategory ToolingSampleCategory("Tooling Sample");
+
 /* a visitor for the consumer */
 class FindBuggyIfVisitor : public RecursiveASTVisitor<FindBuggyIfVisitor> {
 public:
@@ -37,11 +39,10 @@ public:
     FullSourceLoc FullLocation = Context->getFullLoc(s->getLocStart());
     clang::Expr *expr = s->getCond();
     clang::BinaryOperator *op = (BinaryOperator *)expr;
-    llvm::outs() << "Condition: " << op->getLHS() << "\n";
-    if (FullLocation.isValid())
-      llvm::outs() << "Found if at " << FullLocation.getSpellingLineNumber()
-                   << "\n";
-
+    if (!op->isComparisonOp()) {
+      if (FullLocation.isValid())
+        llvm::outs() << "line " << FullLocation.getSpellingLineNumber() << "\n";
+    }
     return true;
   }
 
@@ -73,8 +74,11 @@ public:
   }
 };
 
-int main(int argc, char **argv) {
-  if (argc > 1) {
-    clang::tooling::runToolOnCode(new FindBuggyIfAction, argv[1]);
-  }
+int main(int argc, const char **argv) {
+  CommonOptionsParser op(argc, argv, ToolingSampleCategory);
+  ClangTool Tool(op.getCompilations(), op.getSourcePathList());
+
+  return Tool.run(newFrontendActionFactory<FindBuggyIfAction>().get());
+
+  // clang::tooling::runToolOnCode(new FindBuggyIfAction, argv[1]);
 }
