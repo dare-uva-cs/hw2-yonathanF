@@ -103,7 +103,7 @@ BUILDDIR := build
 .PHONY: all
 all: make_builddir \
 	emit_build_config \
-	$(BUILDDIR)/hw2_t1.cpp
+	$(BUILDDIR)/hw2_t2.cpp
 
 .PHONY: test
 test: emit_build_config
@@ -118,7 +118,7 @@ make_builddir:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 
 
-$(BUILDDIR)/hw2_t1.cpp: $(SRC_CLANG_DIR)/hw2_t1.cpp
+$(BUILDDIR)/hw2_t1.cpp: $(SRC_CLANG_DIR)/hw2_t2.cpp
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) $^ \
 		$(CLANG_LIBS) $(LLVM_LDFLAGS) -o $@
 
