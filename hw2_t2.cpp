@@ -1,44 +1,39 @@
-//------------------------------------------------------------------------------
-// Tooling sample. Demonstrates:
-//
-// * How to write a simple source tool using libTooling.
-// * How to use RecursiveASTVisitor to find interesting AST nodes.
-// * How to use the Rewriter API to rewrite the source code.
-//
-// Eli Bendersky (eliben@gmail.com)
-// This code is in the public domain
-//------------------------------------------------------------------------------
+/* Yonathan Fisseha, yf2ey
+ * Creates a dot file for 'for' loops and if statements. Credit to Eli Bendersky
+ * for the 'if' part of the code. I have added the part for 'for' loops per the
+ * assignment instruction.*/
+
 #include <sstream>
 #include <string>
 
 #include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
-#include "clang/Lex/Lexer.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendActions.h"
+#include "clang/Lex/Lexer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/raw_ostream.h"
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <fstream>
 using namespace std;
 using namespace clang;
 using namespace clang::driver;
 using namespace clang::tooling;
 
-vector<IfStmt*> ifstmtvector;
+vector<IfStmt *> ifstmtvector;
+vector<ForStmt *> forstmtvector;
 vector<FunctionDecl> functiondeclvector;
-vector<Stmt*> stmtvector;
+vector<Stmt *> stmtvector;
 
 static llvm::cl::OptionCategory ToolingSampleCategory("Tooling Sample");
 
-
-//get the source code of the specific parts of AST
+// get the source code of the specific parts of AST
 template <typename T>
 static std::string getText(const SourceManager &SourceManager, const T &Node) {
   SourceLocation StartSpellingLocation =
@@ -82,8 +77,12 @@ public:
       ifstmtvector.push_back(cast<IfStmt>(s));
     }
 
-    //Collect other statements
-    else{
+    // collect for statements as well
+    else if (isa<ForStmt>(s)) {
+      forstmtvector.push_back(cast<ForStmt>(s));
+    }
+    // Collect other statements
+    else {
       stmtvector.push_back(s);
     }
 
@@ -124,6 +123,62 @@ private:
   MyASTVisitor Visitor;
 };
 
+// A function that produces the dot file for nested if statements
+std::string createDotIf(IfStmt *IfStatement, Rewriter &TheRewriter,
+                        int &index) {
+  std::string condition =
+      getText(TheRewriter.getSourceMgr(), *IfStatement->getCond());
+  std::string dotted = "";
+
+  std::string index1 = std::to_string(index + 1);
+  std::string index0 = std::to_string(index);
+  std::string index2 = std::to_string(index + 2);
+  std::string index3 = std::to_string(index + 3);
+  std::string index4 = std::to_string(index + 4);
+
+  // index example: 2
+  // if block: node3
+  dotted += "Node" + index1 + " [shape=record,label=\"" + condition + "\"]\n";
+  index++;
+
+  // node2 points to node3
+  dotted += "Node" + index0 + "->Node" + index1 + ";\n";
+
+  Stmt *Then = IfStatement->getThen();
+  string thenpart = getText(TheRewriter.getSourceMgr(), *Then);
+
+  // then block: node 4
+  dotted += "Node" + index2 + " [shape=record,label=\"" + thenpart + "\"]\n";
+  index++;
+
+  // node3 points to node 4
+  dotted += "Node" + index1 + "->Node" + index2 + ";\n";
+
+  // end node: node6
+  dotted +=
+      "Node" + index4 + " [shape=record,label=\"{ [(DummyNode)]\\l}\"];\n";
+  index++;
+
+  // node4 points to node 6
+  dotted += "Node" + index2 + " -> Node" + index4 + ";\n";
+
+  Stmt *Else = IfStatement->getElse();
+  if (Else) {
+    string elsepart = getText(TheRewriter.getSourceMgr(), *Else);
+    // else block: block 5
+    dotted += "Node" + index3 + " [shape=record,label=\"" + elsepart + "\"]\n";
+    index++;
+
+    // index4 points at index5
+    dotted += "Node" + index2 + " -> Node" + index3 + ";\n";
+
+    // index5 points at index6
+    dotted += "Node" + index3 + " -> Node" + index4 + ";\n";
+  }
+
+  return dotted;
+}
+
 // For each source file provided to the tool, a new FrontendAction is created.
 class MyFrontendAction : public ASTFrontendAction {
 public:
@@ -133,9 +188,8 @@ public:
     llvm::errs() << "** EndSourceFileAction for: "
                  << SM.getFileEntryForID(SM.getMainFileID())->getName() << "\n";
 
-
-    //handle each function definition
-    for(unsigned funcid = 0; funcid < functiondeclvector.size(); funcid++){
+    // handle each function definition
+    for (unsigned funcid = 0; funcid < functiondeclvector.size(); funcid++) {
       FunctionDecl *f = &functiondeclvector[funcid];
       Stmt *FuncBody = f->getBody();
 
@@ -148,63 +202,27 @@ public:
       unsigned startln = funcstart.getSpellingLineNumber();
       unsigned endln = funcend.getSpellingLineNumber();
       ofstream myfile;
-      myfile.open (FuncName + ".dot");
-      cout<< (FuncName + ".dot")<<endl;
+      myfile.open(FuncName + ".dot");
+      cout << (FuncName + ".dot") << endl;
       myfile << "digraph unnamed {\n";
-      
 
-      if(ifstmtvector.size() != 1) {
-        cout<<"one if statement only" << endl;
-        continue;
-      }
-      
       myfile << "Node1 [shape=record,label=\"{ [(ENTRY)]\\l}\"];\n";
-      
 
-      string nodebeforeif = "";
-      // Here we only handle variable definition. 
-      // To make it fully functional, other statment has to be handled too.
-      for(unsigned stmtid = 0; stmtid < stmtvector.size(); stmtid++){
-        /*
-        if(isa<BinaryOperator>(stmtvector[stmtid])) {
-          BinaryOperator *b = cast<BinaryOperator>(stmtvector[stmtid]);
-          if(b->isAssignmentOp()){
-            cout<<getText(SM, *b)<<endl;
-          }
-        }*/
-        if(isa<DeclStmt>(stmtvector[stmtid])) {       
-          DeclStmt *ds = cast<DeclStmt>(stmtvector[stmtid]);
-          VarDecl *vd = cast<VarDecl>(ds->getSingleDecl());
-          if(vd){
-            nodebeforeif = nodebeforeif + getText(TheRewriter.getSourceMgr(), *vd) + "\\l";
-          }
-        } 
-      }
-      myfile << "Node2 [shape=record,label=\"" + nodebeforeif + "\"]\n";
+      myfile << "Node2 [shape=record,label=\"Dummy Node\"]\n";
       myfile << "Node1 -> Node2;\n";
-      //We assume one if statement here
-     
-      IfStmt *IfStatement = ifstmtvector[0];
-      string condition = getText(TheRewriter.getSourceMgr(), *IfStatement->getCond());
-      myfile << "Node3 [shape=record,label=\"" + condition + "\"]\n";
-      myfile << "Node2 -> Node3;\n";
-      Stmt *Then = IfStatement->getThen();
-      string thenpart = getText(SM, *Then);
-      myfile << "Node4 [shape=record,label=\"" + thenpart + "\"]\n";
-      myfile << "Node3 -> Node4;\n";
-      myfile << "Node6 [shape=record,label=\"{ [(Exit)]\\l}\"];\n";
-      myfile << "Node4 -> Node6;\n";
-      Stmt *Else = IfStatement->getElse();
-      if (Else){
-        string elsepart = getText(SM, *Else);
-        myfile << "Node5 [shape=record,label=\"" + elsepart + "\"]\n";
-        myfile << "Node3 -> Node5;\n";
-        myfile << "Node5 -> Node6;\n";
+
+      /* call function to produce the dot strings */
+
+      string dottedIf = "";
+      int j = 2;
+      for (int i = 0; i < ifstmtvector.size(); i++) {
+        IfStmt *IfStatement = ifstmtvector[i];
+        dottedIf += createDotIf(IfStatement, TheRewriter, j);
       }
-      
+
+      myfile << dottedIf << "\n";
       myfile << "}\n";
       myfile.close();
-
     }
   }
 
