@@ -72,19 +72,7 @@ public:
   MyASTVisitor(Rewriter &R) : TheRewriter(R) {}
 
   bool VisitStmt(Stmt *s) {
-    // Collect If statements.
-    if (isa<IfStmt>(s)) {
-      ifstmtvector.push_back(cast<IfStmt>(s));
-    }
-
-    // collect for statements as well
-    else if (isa<ForStmt>(s)) {
-      forstmtvector.push_back(cast<ForStmt>(s));
-    }
-    // Collect other statements
-    else {
-      stmtvector.push_back(s);
-    }
+    stmtvector.push_back(s);
 
     return true;
   }
@@ -175,8 +163,8 @@ std::string createDotIf(IfStmt *IfStatement, Rewriter &TheRewriter, int &index,
     dotted += "Node" + index3 + " [shape=record,label=\"" + elsepart + "\"]\n";
     index++;
 
-    // index4 points at index5
-    dotted += "Node" + index2 + " -> Node" + index3 + ";\n";
+    // node3 points at node5
+    dotted += "Node" + index1 + " -> Node" + index3 + ";\n";
 
     // index5 points at index6
     dotted += "Node" + index3 + " -> Node" + index4 + ";\n";
@@ -269,18 +257,20 @@ public:
       myfile << "Node2 [shape=record,label=\"Dummy Node\"]\n";
       myfile << "Node1 -> Node2;\n";
 
-      /* call function to produce the dot strings */
+      /* call functions to produce the dot strings */
 
       string dottedIf = "";
       int j = 2;
-      for (int i = 0; i < ifstmtvector.size(); i++) {
-        IfStmt *IfStatement = ifstmtvector[i];
-        dottedIf += createDotIf(IfStatement, TheRewriter, j, Context);
-      }
+      for (int i = 0; i < stmtvector.size(); i++) {
+        if (isa<IfStmt>(stmtvector[i])) {
+          IfStmt *IfStatement = cast<IfStmt>(stmtvector[i]);
+          dottedIf += createDotIf(IfStatement, TheRewriter, j, Context);
+        }
 
-      for (int i = 0; i < forstmtvector.size(); i++) {
-        ForStmt *ForStatement = forstmtvector[i];
-        dottedIf += createDotFor(ForStatement, TheRewriter, j, Context);
+        else if (isa<ForStmt>(stmtvector[i])) {
+          ForStmt *ForStatement = cast<ForStmt>(stmtvector[i]);
+          dottedIf += createDotFor(ForStatement, TheRewriter, j, Context);
+        }
       }
 
       myfile << dottedIf << "\n";
