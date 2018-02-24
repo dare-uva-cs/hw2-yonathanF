@@ -2,53 +2,53 @@ digraph unnamed {
 Node1 [shape=record,label="{ [(ENTRY)]\l}"];
 Node2 [shape=record,label="Dummy Node"]
 Node1 -> Node2;
-Node3 [shape=record,label=" Line: 16"]
+Node3 [shape=record,label=" Line: 2"]
 Node2->Node3;
 Node4 [shape=record,label="{
-    n = 54;
-  }"]
-Node3->Node4;
-Node6 [shape=record,label="{ [(DummyNode)]\l}"];
-Node4 -> Node6;
-Node5 [shape=record,label="{
-    n = 3;
-  }"]
-Node4 -> Node5;
-Node5 -> Node6;
-Node7 [shape=record,label=" Line: 22"]
-Node6->Node7;
-Node8 [shape=record,label="{
-    m = 2;
-  }"]
-Node7->Node8;
-Node10 [shape=record,label="{ [(DummyNode)]\l}"];
-Node8 -> Node10;
-Node9 [shape=record,label="{
-    m = 24;
-  }"]
-Node8 -> Node9;
-Node9 -> Node10;
-Node11 [shape=record,label=" Line: 2"]
-Node10->Node11;
-Node12 [shape=record,label="{
     int a = 2;
     int b = 3;
     int c = 4;
     b -= c;
   }"]
-Node11->Node12;
-Node12->Node11;
-Node13 [shape=record,label="{ [(DummyNode)]\l}"];
-Node11 -> Node13;
-Node14 [shape=record,label=" Line: 9"]
-Node13->Node14;
-Node15 [shape=record,label="{
+Node3->Node4;
+Node4->Node3;
+Node5 [shape=record,label="{ [(DummyNode)]\l}"];
+Node3 -> Node5;
+Node6 [shape=record,label=" Line: 9"]
+Node5->Node6;
+Node7 [shape=record,label="{
     int d = 5;
     d--;
   }"]
-Node14->Node15;
-Node15->Node14;
+Node6->Node7;
+Node7->Node6;
+Node8 [shape=record,label="{ [(DummyNode)]\l}"];
+Node6 -> Node8;
+Node9 [shape=record,label=" Line: 16"]
+Node8->Node9;
+Node10 [shape=record,label="{
+    n = 54;
+  }"]
+Node9->Node10;
+Node12 [shape=record,label="{ [(DummyNode)]\l}"];
+Node10 -> Node12;
+Node11 [shape=record,label="{
+    n = 3;
+  }"]
+Node9 -> Node11;
+Node11 -> Node12;
+Node13 [shape=record,label=" Line: 22"]
+Node12->Node13;
+Node14 [shape=record,label="{
+    m = 2;
+  }"]
+Node13->Node14;
 Node16 [shape=record,label="{ [(DummyNode)]\l}"];
 Node14 -> Node16;
+Node15 [shape=record,label="{
+    m = 24;
+  }"]
+Node13 -> Node15;
+Node15 -> Node16;
 
 }
