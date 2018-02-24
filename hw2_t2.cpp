@@ -124,8 +124,14 @@ private:
 };
 
 // A function that produces the dot file for nested if statements
-std::string createDotIf(IfStmt *IfStatement, Rewriter &TheRewriter,
-                        int &index) {
+std::string createDotIf(IfStmt *IfStatement, Rewriter &TheRewriter, int &index,
+                        ASTContext *Context) {
+  FullSourceLoc FullLocation = Context->getFullLoc(IfStatement->getLocStart());
+
+  // grab the condition line num
+  std::string lineNum = std::to_string(FullLocation.getSpellingLineNumber());
+  lineNum = " Line: " + lineNum;
+
   std::string condition =
       getText(TheRewriter.getSourceMgr(), *IfStatement->getCond());
   std::string dotted = "";
@@ -138,7 +144,7 @@ std::string createDotIf(IfStmt *IfStatement, Rewriter &TheRewriter,
 
   // index example: 2
   // if block: node3
-  dotted += "Node" + index1 + " [shape=record,label=\"" + condition + "\"]\n";
+  dotted += "Node" + index1 + " [shape=record,label=\"" + lineNum + "\"]\n";
   index++;
 
   // node2 points to node3
@@ -175,6 +181,58 @@ std::string createDotIf(IfStmt *IfStatement, Rewriter &TheRewriter,
     // index5 points at index6
     dotted += "Node" + index3 + " -> Node" + index4 + ";\n";
   }
+
+  return dotted;
+}
+
+/* a function that returns a dot string for 'for' loops */
+std::string createDotFor(ForStmt *ForStatement, Rewriter &TheRewriter,
+                         int &index, ASTContext *Context) {
+
+  FullSourceLoc FullLocation = Context->getFullLoc(ForStatement->getLocStart());
+
+  // grab the condition line num
+  std::string lineNum = std::to_string(FullLocation.getSpellingLineNumber());
+  std::string dotted = "";
+
+  // setup the nodes indices
+  std::string index0 = std::to_string(index + 0);
+  std::string index1 = std::to_string(index + 1);
+  std::string index2 = std::to_string(index + 2);
+  std::string index3 = std::to_string(index + 3);
+  std::string index4 = std::to_string(index + 4);
+
+  lineNum = " Line: " + lineNum;
+
+  // example: prev node is 2
+
+  // the condition block: node3
+  dotted += "Node" + index1 + " [shape=record,label=\"" + lineNum + "\"]\n";
+  index++;
+
+  // the previous node points to the condition code
+  dotted += "Node" + index0 + "->Node" + index1 + ";\n";
+
+  // get body of loop: node4
+  Stmt *body = ForStatement->getBody();
+  string bodyPart = getText(TheRewriter.getSourceMgr(), *body);
+
+  dotted += "Node" + index2 + " [shape=record,label=\"" + bodyPart + "\"]\n";
+  index++;
+
+  // the condition block points to the body
+  dotted += "Node" + index1 + "->Node" + index2 + ";\n";
+
+  // the body points back at the condition
+  dotted += "Node" + index2 + "->Node" + index1 + ";\n";
+
+  // end node: node3
+  dotted +=
+      "Node" + index3 + " [shape=record,label=\"{ [(DummyNode)]\\l}\"];\n";
+  index++;
+
+  // the condition code points to the exit node
+  dotted += "Node" + index1 + " -> Node" + index3 + ";\n";
 
   return dotted;
 }
@@ -217,7 +275,12 @@ public:
       int j = 2;
       for (int i = 0; i < ifstmtvector.size(); i++) {
         IfStmt *IfStatement = ifstmtvector[i];
-        dottedIf += createDotIf(IfStatement, TheRewriter, j);
+        dottedIf += createDotIf(IfStatement, TheRewriter, j, Context);
+      }
+
+      for (int i = 0; i < forstmtvector.size(); i++) {
+        ForStmt *ForStatement = forstmtvector[i];
+        dottedIf += createDotFor(ForStatement, TheRewriter, j, Context);
       }
 
       myfile << dottedIf << "\n";

@@ -1,5 +1,6 @@
 mytag
 *.swp
+*.swo
 /build
 */build
 */build/*
